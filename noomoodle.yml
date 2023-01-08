@@ -9,6 +9,7 @@
     db_pass: PleaseChooseBetterPasswordsThanThis
     ssh_port: 42324
     max_uploadable_filesize: 200M
+    server_username: adam
   become: true
   tasks: 
   - name: Configure firewall to limit {{ ssh_port }} and 80; and allow on 443
@@ -119,8 +120,8 @@
       path: /srv/{{ moodle_dir }}
       state: directory
       mode: "0755"
-      owner: adam
-      group: adam
+      owner: "{{ server_username }}"
+      group: "{{ server_username }}"
     tags: 
     - installation
     - moodle
@@ -155,7 +156,7 @@
       state: directory
       recurse: yes
       owner: www-data
-      group: adam
+      group: "{{ server_username }}"
     tags: 
     - installation
     - moodle
