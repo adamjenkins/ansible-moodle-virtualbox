@@ -229,7 +229,7 @@
       path: /etc/php/7.4/fpm/php.ini
       section: PHP
       option: post_max_size
-      value: {{ max_uploadable_filesize }}
+      value: "{{ max_uploadable_filesize }}"
     tags:
     - installation
     - php.ini
@@ -239,7 +239,7 @@
       path: /etc/php/7.4/fpm/php.ini
       section: PHP
       option: upload_max_filesize
-      value: {{ max_uploadable_filesize }}
+      value: "{{ max_uploadable_filesize }}"
     tags:
     - installation
     - php.ini
