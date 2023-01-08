@@ -1,0 +1,295 @@
+---
+- hosts: noomoodleservers
+  vars:
+    moodle_dir: moodle
+    moodle_git_branch: MOODLE_401_STABLE
+    disable_cron: false
+    db_name: "{{ moodle_dir }}"
+    db_user: "{{ moodle_dir }}user"
+    db_pass: PleaseChooseBetterPasswordsThanThis
+    ssh_port: 42324
+    max_uploadable_filesize: 200M
+  become: true
+  tasks: 
+  - name: Configure firewall to limit {{ ssh_port }} and 80; and allow on 443
+    apt:
+      name: 
+        - ufw
+      state: present  
+    tags: 
+      - firewall
+      - installation
+  - name: Set default policy to DENY
+    ufw:
+      policy: deny
+    tags: 
+      - firewall
+      - installation
+  - name: Limit access to tcp port {{ ssh_port }}
+    ufw:
+      rule: limit
+      port: "{{ ssh_port }}"
+      proto: tcp
+    tags: 
+      - firewall
+      - installation
+  - name: Limit access to tcp port 22
+    ufw:
+      rule: limit
+      port: 22
+      proto: tcp
+    tags: 
+      - firewall
+      - installation
+  - name: Limit access to tcp port 80
+    ufw:
+      rule: limit
+      port: 80
+      proto: tcp
+    tags: 
+      - firewall
+      - installation
+  - name: Allow all access to tcp port 443
+    ufw:
+      rule: allow
+      port: 443
+      proto: tcp
+    tags: 
+      - firewall
+      - installation
+  - name: Enable Firewall
+    ufw:
+      state: enabled
+    tags: 
+      - firewall
+      - installation
+
+  - name: Ansible apt install packages for LEPP
+    apt:
+      name: 
+        - htop
+        - git
+        - rsync
+        - snapd
+        - nginx
+        - php-fpm
+        - php-pgsql
+        - php-curl
+        - php-xml
+        - php-xmlrpc
+        - php-intl
+        - php-soap
+        - php-gd
+        - php-mbstring
+        - php-yaml
+        - php-zip
+        - aspell
+        - graphviz
+        - ghostscript
+        - clamav
+        - clamdscan
+        - poppler-utils
+        - postgresql
+        - postgresql-contrib
+      state: present
+    tags:
+    - installation
+    - nginx
+    - dbsetup
+    - dependencies
+
+  - name: Install certbot via snap
+    snap:
+      name: certbot
+      classic: yes
+    tags: 
+    - installation
+    - certbot
+  - name: Make Symlink for Certbot
+    file:
+      src: /snap/bin/certbot
+      dest: /usr/bin/certbot
+      state: link
+    tags: 
+    - certbot
+    - installation
+    
+  - name: Setup Moodle directory
+    file:
+      path: /srv/{{ moodle_dir }}
+      state: directory
+      mode: "0755"
+      owner: adam
+      group: adam
+    tags: 
+    - installation
+    - moodle
+    - moodlecode
+
+  - name: Setup Moodledata directory /srv/{{ moodle_dir }}/moodledata
+    file:
+      path: /srv/{{ moodle_dir }}/moodledata
+      state: directory
+      owner: www-data
+      group: www-data
+      mode: "0700"
+    tags: 
+    - installation
+    - moodle
+    - moodledata
+
+  - name: Clone Moodle into /srv/{{ moodle_dir }}/www
+    git:
+      repo: https://github.com/moodle/moodle.git
+      dest: /srv/{{ moodle_dir }}/www/
+      clone: true
+      version: "{{ moodle_git_branch }}"
+    tags: 
+    - installation
+    - moodle
+    - moodlecode
+
+  - name: Recursively change ownership of Moodle directory
+    file:
+      path: /srv/{{ moodle_dir }}/www
+      state: directory
+      recurse: yes
+      owner: www-data
+      group: adam
+    tags: 
+    - installation
+    - moodle
+    - moodlecode
+  
+  - name: Setup cronjob to run each minute
+    cron:
+      name: Moodle Cron Job
+      user: www-data
+      job: "php /srv/{{ moodle_dir }}/www/admin/cli/cron.php > /dev/null 2>&1"
+      disabled: "{{ disable_cron }}"
+    tags:
+    - installation
+    - moodle
+    - cronjob
+  
+  - name: Setup Moodle config.php
+    template:
+      dest: "/srv/{{ moodle_dir }}/www/config.php"
+      mode: "0444"
+      owner: www-data
+      group: www-data
+      src: config.php.j2
+    tags: 
+    - installation
+    - config.php
+  
+  - name: Setup Nginx Virtualhost
+    template:
+      dest: "/etc/nginx/sites-available/{{ moodle_domain }}"
+      mode: "0664"
+      src: vhost.j2
+    tags: 
+    - installation
+    - virtualhost
+    - nginx
+    
+  - name: Add Symlink for Nginx Virtualhost
+    file:
+      src: "/etc/nginx/sites-available/{{ moodle_domain }}"
+      dest: "/etc/nginx/sites-enabled/{{ moodle_domain }}"
+      state: link
+    tags:
+    - nginx
+  
+  - name: Remove nginx default site
+    file:
+      name: "/etc/nginx/sites-enabled/default"
+      state: absent
+    tags:
+    - nginx
+  
+  - name: Restart Nginx 
+    service:
+      name: nginx
+      state: restarted
+    tags:
+    - nginx
+
+  - name: Add Postgres user
+    command: sudo -u postgres psql -c "CREATE USER {{ db_user }} WITH PASSWORD '{{ db_pass }}';"  
+    tags: dbsetup
+  - name: Add Postgres Database
+    command: sudo -u postgres createdb -O {{ db_user }} {{ db_name }}
+    tags: dbsetup
+    
+    
+    
+  - name: Change post_max_size in php.ini
+    ini_file:
+      path: /etc/php/7.4/fpm/php.ini
+      section: PHP
+      option: post_max_size
+      value: {{ max_uploadable_filesize }}
+    tags:
+    - installation
+    - php.ini
+    
+  - name: Change upload_max_filesize in php.ini
+    ini_file:
+      path: /etc/php/7.4/fpm/php.ini
+      section: PHP
+      option: upload_max_filesize
+      value: {{ max_uploadable_filesize }}
+    tags:
+    - installation
+    - php.ini
+    
+  - name: Change max_input_time in php.ini
+    ini_file:
+      path: /etc/php/7.4/fpm/php.ini
+      section: PHP
+      option: max_input_time
+      value: 600
+    tags:
+    - installation
+    - php.ini
+
+  - name: Change max_execution_time in php.ini
+    ini_file:
+      path: /etc/php/7.4/fpm/php.ini
+      section: PHP
+      option: max_execution_time
+      value: 300
+    tags:
+    - installation
+    - php.ini
+    
+
+  - name: Change memory_limit in php.ini
+    ini_file:
+      path: /etc/php/7.4/fpm/php.ini
+      section: PHP
+      option: memory_limit
+      value: 256M
+    tags:
+    - installation
+    - php.ini
+    
+  - name: Change max_input_vars in php.ini
+    ini_file:
+      path: /etc/php/7.4/fpm/php.ini
+      section: PHP
+      option: max_input_vars
+      value: 10000
+    tags:
+    - installation
+    - php.ini
+    
+  - name: Restart php7.4-fpm 
+    service:
+      name: php7.4-fpm
+      state: restarted
+    tags:
+    - php.ini
+    - installation
+    - php-restart

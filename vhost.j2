@@ -1,0 +1,58 @@
+server {
+
+#	root /var/www/html;
+	root /srv/{{ moodle_dir }}/www;
+
+	# Add index.php to the list if you are using PHP
+	index index.html index.htm index.php index.nginx-debian.html;
+
+	server_name {{ moodle_domain }};
+
+	client_max_body_size 2000M;
+
+	location / {
+		# First attempt to serve request as file, then
+		# as directory, then fall back to displaying a 404.
+		try_files $uri $uri/ =404;
+	}
+
+
+	location ~ [^/]\.php(/|$) {
+	    fastcgi_split_path_info  ^(.+\.php)(/.+)$;
+	    fastcgi_index            index.php;
+	    fastcgi_pass unix:/var/run/php/php7.4-fpm.sock;
+	    include                  fastcgi_params;
+	    fastcgi_param   PATH_INFO       $fastcgi_path_info;
+	    fastcgi_param   SCRIPT_FILENAME $document_root$fastcgi_script_name;
+	    fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+	    fastcgi_param DOCUMENT_ROOT $realpath_root;
+	    fastcgi_read_timeout 3600;
+
+	}
+
+	# This passes 404 pages to Moodle so they can be themed
+	error_page 404 /error/index.php;    error_page 403 =404 /error/index.php;
+
+	# Hide all dot files but allow "Well-Known URIs" as per RFC 5785
+	location ~ /\.(?!well-known).* {
+	    return 404;
+	}
+
+	# This should be after the php fpm rule and very close to the last nginx ruleset.
+	# Don't allow direct access to various internal files. See MDL-69333
+	location ~ (/vendor/|/node_modules/|composer\.json|/readme|/README|readme\.txt|/upgrade\.txt|db/install\.xml|/fixtures/|/behat/|phpunit\.xml|\.lock|environment\.xml) {
+      deny all;
+	    return 404;
+	}
+
+  location /dataroot/ {
+      internal;
+      alias /srv/{{ moodle_dir }}/moodledata/; # ensure the path ends with /
+  }
+  
+
+
+	listen 80;
+	listen [::]:80;
+
+}

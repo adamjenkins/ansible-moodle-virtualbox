@@ -1,0 +1,45 @@
+<?php  // Moodle configuration file
+
+unset($CFG);
+global $CFG;
+$CFG = new stdClass();
+
+$CFG->dbtype    = 'pgsql';
+$CFG->dblibrary = 'native';
+$CFG->dbhost    = 'localhost';
+$CFG->dbname    = '{{ db_name }}';
+$CFG->dbuser    = '{{ db_user }}';
+$CFG->dbpass    = '{{ db_pass }}';
+$CFG->prefix    = 'mdl_';
+$CFG->dboptions = array (
+  'dbpersist' => 0,
+  'dbport' => '',
+  'dbsocket' => '',
+  'dbcollation' => 'utf8mb4_unicode_ci',
+);
+
+$CFG->wwwroot   = 'http://{{ moodle_domain }}';
+$CFG->dataroot  = '/srv/{{ moodle_dir }}/moodledata';
+$CFG->admin     = 'admin';
+
+$CFG->directorypermissions = 0777;
+
+require_once(__DIR__ . '/lib/setup.php');
+
+$CFG->xsendfile = 'X-Accel-Redirect';
+$CFG->xsendfilealiases = array(
+    '/dataroot/' => $CFG->dataroot
+);
+
+
+$CFG->preventexecpath = true;
+      $CFG->pathtogs = '/usr/bin/gs';
+      $CFG->pathtophp = '/usr/bin/php';
+      $CFG->pathtodu = '/usr/bin/du';
+      $CFG->aspellpath = '/usr/bin/aspell';
+      $CFG->pathtodot = '/usr/bin/dot';
+      $CFG->pathtopdftoppm = '/usr/bin/pdftoppm';
+      $CFG->pathtopython = '/usr/bin/python3';
+
+      $CFG->forced_plugin_settings = ['antivirus_clamav' => ['pathtoclam' => '/usr/bin/clamdscan']];
+
