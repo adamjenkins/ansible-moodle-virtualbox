@@ -1,5 +1,6 @@
 ---
 - hosts: noomoodleservers
+  gather_facts: false
   vars:
     moodle_dir: moodle
     moodle_git_branch: MOODLE_401_STABLE
@@ -9,7 +10,7 @@
     db_pass: PleaseChooseBetterPasswordsThanThis
     ssh_port: 42324
     max_uploadable_filesize: 200M
-    server_username: adam
+    non_root_user: adam
   become: true
   tasks: 
   - name: Configure firewall to limit {{ ssh_port }} and 80; and allow on 443
@@ -20,12 +21,14 @@
     tags: 
       - firewall
       - installation
+      - everythingbutmoodle
   - name: Set default policy to DENY
     ufw:
       policy: deny
     tags: 
       - firewall
       - installation
+      - everythingbutmoodle
   - name: Limit access to tcp port {{ ssh_port }}
     ufw:
       rule: limit
@@ -34,6 +37,7 @@
     tags: 
       - firewall
       - installation
+      - everythingbutmoodle
   - name: Limit access to tcp port 22
     ufw:
       rule: limit
@@ -42,14 +46,17 @@
     tags: 
       - firewall
       - installation
+      - everythingbutmoodle
   - name: Limit access to tcp port 80
     ufw:
-      rule: limit
+      rule: allow
       port: 80
       proto: tcp
     tags: 
       - firewall
       - installation
+      - port80
+      - everythingbutmoodle
   - name: Allow all access to tcp port 443
     ufw:
       rule: allow
@@ -58,12 +65,14 @@
     tags: 
       - firewall
       - installation
+      - everythingbutmoodle
   - name: Enable Firewall
     ufw:
       state: enabled
     tags: 
       - firewall
       - installation
+      - everythingbutmoodle
 
   - name: Ansible apt install packages for LEPP
     apt:
@@ -98,6 +107,7 @@
     - nginx
     - dbsetup
     - dependencies
+    - everythingbutmoodle
 
   - name: Install certbot via snap
     snap:
@@ -106,6 +116,7 @@
     tags: 
     - installation
     - certbot
+    - everythingbutmoodle
   - name: Make Symlink for Certbot
     file:
       src: /snap/bin/certbot
@@ -114,14 +125,15 @@
     tags: 
     - certbot
     - installation
+    - everythingbutmoodle
     
   - name: Setup Moodle directory
     file:
       path: /srv/{{ moodle_dir }}
       state: directory
       mode: "0755"
-      owner: "{{ server_username }}"
-      group: "{{ server_username }}"
+      owner: "{{ non_root_user }}"
+      group: "{{ non_root_user }}"
     tags: 
     - installation
     - moodle
@@ -156,7 +168,7 @@
       state: directory
       recurse: yes
       owner: www-data
-      group: "{{ server_username }}"
+      group: "{{ non_root_user }}"
     tags: 
     - installation
     - moodle
@@ -164,7 +176,7 @@
   
   - name: Setup cronjob to run each minute
     cron:
-      name: Moodle Cron Job
+      name: Moodle Cron Job - {{ moodle_domain }}
       user: www-data
       job: "php /srv/{{ moodle_dir }}/www/admin/cli/cron.php > /dev/null 2>&1"
       disabled: "{{ disable_cron }}"
@@ -183,6 +195,7 @@
     tags: 
     - installation
     - config.php
+    - moodle
   
   - name: Setup Nginx Virtualhost
     template:
@@ -193,6 +206,7 @@
     - installation
     - virtualhost
     - nginx
+    - everythingbutmoodle
     
   - name: Add Symlink for Nginx Virtualhost
     file:
@@ -201,6 +215,7 @@
       state: link
     tags:
     - nginx
+    - everythingbutmoodle
   
   - name: Remove nginx default site
     file:
@@ -208,6 +223,7 @@
       state: absent
     tags:
     - nginx
+    - everythingbutmoodle
   
   - name: Restart Nginx 
     service:
@@ -215,6 +231,7 @@
       state: restarted
     tags:
     - nginx
+    - everythingbutmoodle
 
   - name: Add Postgres user
     command: sudo -u postgres psql -c "CREATE USER {{ db_user }} WITH PASSWORD '{{ db_pass }}';"  
@@ -234,6 +251,7 @@
     tags:
     - installation
     - php.ini
+    - everythingbutmoodle
     
   - name: Change upload_max_filesize in php.ini
     ini_file:
@@ -244,6 +262,7 @@
     tags:
     - installation
     - php.ini
+    - everythingbutmoodle
     
   - name: Change max_input_time in php.ini
     ini_file:
@@ -254,6 +273,7 @@
     tags:
     - installation
     - php.ini
+    - everythingbutmoodle
 
   - name: Change max_execution_time in php.ini
     ini_file:
@@ -264,6 +284,7 @@
     tags:
     - installation
     - php.ini
+    - everythingbutmoodle
     
 
   - name: Change memory_limit in php.ini
@@ -275,6 +296,7 @@
     tags:
     - installation
     - php.ini
+    - everythingbutmoodle
     
   - name: Change max_input_vars in php.ini
     ini_file:
@@ -285,6 +307,7 @@
     tags:
     - installation
     - php.ini
+    - everythingbutmoodle
     
   - name: Restart php7.4-fpm 
     service:
@@ -294,3 +317,4 @@
     - php.ini
     - installation
     - php-restart
+    - everythingbutmoodle
