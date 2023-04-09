@@ -1,0 +1,7 @@
+---
+- name: Add Postgres user
+  command: sudo -u postgres psql -c "CREATE USER {{ db_user }} WITH PASSWORD '{{ db_pass }}';"  
+
+- name: Add Postgres Database
+  command: sudo -u postgres createdb -O {{ db_user }} {{ db_name }}
+

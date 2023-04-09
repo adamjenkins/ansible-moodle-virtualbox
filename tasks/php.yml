@@ -1,0 +1,48 @@
+---
+- name: Change post_max_size in php.ini
+  ini_file:
+    path: /etc/php/{{ php_version }}/fpm/php.ini
+    section: PHP
+    option: post_max_size
+    value: "{{ max_uploadable_filesize }}"
+  
+- name: Change upload_max_filesize in php.ini
+  ini_file:
+    path: /etc/php/{{ php_version }}/fpm/php.ini
+    section: PHP
+    option: upload_max_filesize
+    value: "{{ max_uploadable_filesize }}"
+  
+- name: Change max_input_time in php.ini
+  ini_file:
+    path: /etc/php/{{ php_version }}/fpm/php.ini
+    section: PHP
+    option: max_input_time
+    value: 600
+
+- name: Change max_execution_time in php.ini
+  ini_file:
+    path: /etc/php/{{ php_version }}/fpm/php.ini
+    section: PHP
+    option: max_execution_time
+    value: 300
+
+- name: Change memory_limit in php.ini
+  ini_file:
+    path: /etc/php/{{ php_version }}/fpm/php.ini
+    section: PHP
+    option: memory_limit
+    value: 256M
+  
+- name: Change max_input_vars in php.ini
+  ini_file:
+    path: /etc/php/{{ php_version }}/fpm/php.ini
+    section: PHP
+    option: max_input_vars
+    value: 10000
+  
+- name: Restart php{{ php_version }}-fpm 
+  service:
+    name: php{{ php_version }}-fpm
+    state: restarted
+

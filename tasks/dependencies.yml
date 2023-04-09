@@ -1,0 +1,35 @@
+---
+- name: Ansible apt install packages for LEPP
+  apt:
+    name: 
+      - htop
+      - git
+      - rsync
+      - snapd
+      - nginx
+      - php{{ php_version }}-fpm
+      - php{{ php_version }}-pgsql
+      - php{{ php_version }}-curl
+      - php{{ php_version }}-xml
+      - php{{ php_version }}-xmlrpc
+      - php{{ php_version }}-intl
+      - php{{ php_version }}-soap
+      - php{{ php_version }}-gd
+      - php{{ php_version }}-mbstring
+      - php{{ php_version }}-yaml
+      - php{{ php_version }}-zip
+      - aspell
+      - graphviz
+      - ghostscript
+      - clamav
+      - clamdscan
+      - poppler-utils
+      - postgresql
+      - postgresql-contrib
+    state: present
+  tags:
+  - installation
+  - nginx
+  - dbsetup
+  - dependencies
+  - everythingbutmoodle

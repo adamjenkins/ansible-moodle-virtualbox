@@ -1,0 +1,8 @@
+---
+- name: Setup cronjob to run each minute
+  cron:
+    name: Moodle Cron Job - {{ moodle_domain }}
+    user: www-data
+    job: "php /srv/{{ moodle_dir }}/www/admin/cli/cron.php > /dev/null 2>&1"
+    disabled: "{{ disable_cron }}"
+

@@ -1,0 +1,62 @@
+---
+- name: Configure firewall to limit {{ ssh_port }} and 80; and allow on 443
+  apt:
+    name: 
+      - ufw
+    state: present  
+  tags: 
+    - firewall
+    - installation
+    - everythingbutmoodle
+- name: Set default policy to DENY
+  ufw:
+    policy: deny
+  tags: 
+    - firewall
+    - installation
+    - everythingbutmoodle
+- name: Limit access to tcp port {{ ssh_port }}
+  ufw:
+    rule: limit
+    port: "{{ ssh_port }}"
+    proto: tcp
+  tags: 
+    - firewall
+    - installation
+    - everythingbutmoodle
+- name: Limit access to tcp port 22
+  ufw:
+    rule: limit
+    port: 22
+    proto: tcp
+  tags: 
+    - firewall
+    - installation
+    - everythingbutmoodle
+- name: Limit access to tcp port 80
+  ufw:
+    rule: allow
+    port: 80
+    proto: tcp
+  tags: 
+    - firewall
+    - installation
+    - port80
+    - everythingbutmoodle
+- name: Allow all access to tcp port 443
+  ufw:
+    rule: allow
+    port: 443
+    proto: tcp
+  tags: 
+    - firewall
+    - installation
+    - everythingbutmoodle
+- name: Enable Firewall
+  ufw:
+    state: enabled
+  tags: 
+    - firewall
+    - installation
+    - everythingbutmoodle
+

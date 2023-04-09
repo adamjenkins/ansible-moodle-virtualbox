@@ -1,0 +1,23 @@
+---
+- name: Setup Nginx Virtualhost
+  template:
+    dest: "/etc/nginx/sites-available/{{ moodle_domain }}"
+    mode: "0664"
+    src: vhost.j2
+  
+- name: Add Symlink for Nginx Virtualhost
+  file:
+    src: "/etc/nginx/sites-available/{{ moodle_domain }}"
+    dest: "/etc/nginx/sites-enabled/{{ moodle_domain }}"
+    state: link
+
+- name: Remove nginx default site
+  file:
+    name: "/etc/nginx/sites-enabled/default"
+    state: absent
+
+- name: Restart Nginx 
+  service:
+    name: nginx
+    state: restarted
+

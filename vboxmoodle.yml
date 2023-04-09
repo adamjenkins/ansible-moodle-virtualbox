@@ -1,0 +1,83 @@
+---
+- hosts: vagrants
+  gather_facts: false
+  vars:
+    moodle_dir: moodle
+    moodle_git_branch: MOODLE_401_STABLE
+    php_version: 7.4
+    disable_cron: false
+    db_name: "{{ moodle_dir }}"
+    db_user: "{{ moodle_dir }}user"
+    db_pass: PleaseChooseBetterPasswordsThanThis
+    ssh_port: 42324
+    max_uploadable_filesize: 200M
+    non_root_user: vagrant
+  become: true
+  tasks: 
+  - name: Setup Firewall
+    ansible.builtin.include_tasks:
+      file: tasks/firewall.yml
+      apply:
+        tags:
+          - firewall
+    tags: firewall
+          
+  - name: Install Dependencies
+    ansible.builtin.include_tasks:
+      file: tasks/dependencies.yml
+      apply:
+        tags:
+          - dependencies
+          - nginx
+          - php-fpm
+          - postgres
+    tags: 
+      - dependencies
+      - nginx
+      - php-fpm
+      - postgres
+
+#  - name: Install and prepare certbot
+#    ansible.builtin.include_tasks:
+#      file: tasks/certbot.yml
+#      apply:
+#        tags:
+#          - certbot
+#    tags: certbot
+
+  - name: Prepare Moodle dirs and code
+    ansible.builtin.include_tasks:
+      file: tasks/moodle.yml
+      apply:
+        tags: moodle
+    tags: moodle
+
+  - name: Setup Moodle cron job
+    ansible.builtin.include_tasks:
+      file: tasks/cron.yml
+      apply:
+        tags: cronjob
+    tags: cronjob
+
+  - name: Setup Nginx webserver
+    ansible.builtin.include_tasks:
+      file: tasks/nginx.yml
+      apply:
+        tags: nginx
+    tags: nginx
+ 
+  - name: Setup PHP-FPM
+    ansible.builtin.include_tasks:
+      file: tasks/php.yml  
+      apply:
+        tags: php-fpm
+    tags: php-fpm
+
+  - name: Setup PostgreSQL
+    ansible.builtin.include_tasks:
+      file: tasks/postgres.yml
+      apply:
+        tags: postgres    
+    tags: postgres    
+    
+

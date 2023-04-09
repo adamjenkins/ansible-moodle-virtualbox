@@ -1,0 +1,41 @@
+---
+- name: Setup Moodle directory
+  file:
+    path: /srv/{{ moodle_dir }}
+    state: directory
+    mode: "0755"
+    owner: "{{ non_root_user }}"
+    group: "{{ non_root_user }}"
+
+
+- name: Setup Moodledata directory /srv/{{ moodle_dir }}/moodledata
+  file:
+    path: /srv/{{ moodle_dir }}/moodledata
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: "0700"
+
+- name: Clone Moodle into /srv/{{ moodle_dir }}/www
+  git:
+    repo: https://github.com/moodle/moodle.git
+    dest: /srv/{{ moodle_dir }}/www/
+    clone: true
+    version: "{{ moodle_git_branch }}"
+
+- name: Recursively change ownership of Moodle directory
+  file:
+    path: /srv/{{ moodle_dir }}/www
+    state: directory
+    recurse: yes
+    owner: www-data
+    group: "{{ non_root_user }}"
+
+- name: Setup Moodle config.php
+  template:
+    dest: "/srv/{{ moodle_dir }}/www/config.php"
+    mode: "0444"
+    owner: www-data
+    group: www-data
+    src: config.php.j2
+
